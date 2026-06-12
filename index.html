@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Data Merger - Login</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            /* Creates a beautiful purple gradient background across the whole screen */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center; /* Centers the login card vertically */
+            justify-content: center; /* Centers the login card horizontally */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-card {
+            background: #ffffff;
+            padding: 50px; /* Increased padding inside the card for a more spacious feel */
+            border-radius: 15px; /* Rounded corners for the login box */
+            box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.2); /* Soft shadow around the box */
+            width: 100%;
+            max-width: 450px; /* Increased card size from 400px to 450px for a wider look */
+        }
+        .login-title {
+            font-weight: 700;
+            color: #4a148c;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .btn-custom {
+            background: #764ba2;
+            color: white;
+            font-weight: 600;
+            width: 100%;
+            padding: 12px; /* Slightly increased padding for a bigger, bolder button */
+            border-radius: 8px;
+            transition: 0.3s; /* Smooth hover effect transition */
+        }
+        .btn-custom:hover {
+            background: #5a328a; /* Darker purple color when mouse hovers over button */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h3 class="login-title">Student Data Merger</h3>
+        <p class="text-muted text-center" style="font-size: 14px; margin-bottom: 30px;">Authorized College Staff Login Only</p>
+        
+        <form id="loginForm">
+            
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control form-control-lg" id="email" placeholder="admin@college.com" style="font-size: 16px;" required>
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control form-control-lg" id="password" placeholder="••••••••" style="font-size: 16px;" required>
+            </div>
+            
+            <button type="submit" class="btn btn-custom">Login</button>
+        </form>
+        
+        <div id="errorMessage" class="text-danger text-center mt-3" style="display: none; font-size: 14px;"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
+        // Event Listener: Captures the 'submit' action when user clicks the login button
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevents the page from refreshing automatically on submit
+            alert('Login logic connection pending!');
+        });
+    </script>
+</body>
+</html>
