@@ -31,14 +31,17 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// MAIN ROUTE: Receives multiple excel files, reads data, merges them intelligently, and returns a Master File + Merged Data JSON
+// MAIN ROUTE: Receives multiple excel files + dynamic primary key, merges them intelligently
 app.post('/api/merge', upload.array('excelFiles'), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ success: false, message: 'No files uploaded.' });
         }
 
-        // Object map to group and combine student rows by their unique PRN_NO
+        // Fetch the dynamic primary key parameter from frontend (defaults to 'PRN_NO' if empty)
+        const userPrimaryKey = req.body.primaryKey ? req.body.primaryKey.trim().toUpperCase() : 'PRN_NO';
+
+        // Object map to group and combine student rows dynamically by user-defined primary key
         let studentMap = {}; 
 
         // Loop through each uploaded Excel file sequentially
@@ -55,20 +58,20 @@ app.post('/api/merge', upload.array('excelFiles'), (req, res) => {
             // Convert worksheet binary rows into easy JavaScript JSON Objects array
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
             
-            // PROCESS EACH ROW INTELLIGENTLY
+            // PROCESS EACH ROW INTELLIGENTLY USING THE DYNAMIC KEY
             jsonData.forEach((row) => {
-                // Find the PRN key dynamically (handles whitespace or lowercase variations like 'prn_no')
-                const prnKey = Object.keys(row).find(k => k.trim().toUpperCase() === 'PRN_NO');
+                // Find the target key dynamically (handles whitespace or lowercase variations matching the user input)
+                const matchedKey = Object.keys(row).find(k => k.trim().toUpperCase() === userPrimaryKey);
                 
-                if (prnKey && row[prnKey] !== undefined) {
-                    const prnValue = row[prnKey].toString().trim();
+                if (matchedKey && row[matchedKey] !== undefined) {
+                    const keyValue = row[matchedKey].toString().trim();
 
-                    if (!studentMap[prnValue]) {
-                        // If PRN is encountered for the first time, create a new entry
-                        studentMap[prnValue] = { ...row };
+                    if (!studentMap[keyValue]) {
+                        // If the key value is encountered for the first time, create a new entry
+                        studentMap[keyValue] = { ...row };
                     } else {
-                        // If PRN already exists, merge new columns into the same row without creating a duplicate line!
-                        studentMap[prnValue] = { ...studentMap[prnValue], ...row };
+                        // If the key already exists, merge new columns into the same row without creating duplicates
+                        studentMap[keyValue] = { ...studentMap[keyValue], ...row };
                     }
                 }
             });
