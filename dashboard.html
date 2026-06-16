@@ -190,6 +190,12 @@
                             <div id="fileList"></div>
                         </div>
 
+                        <div class="mb-4 mt-4 text-start mx-auto" style="max-width: 450px;">
+                            <label for="primaryKeyInput" class="form-label fw-bold text-dark">🔑 Enter Unique Column Name (Primary Key):</label>
+                            <input type="text" id="primaryKeyInput" class="form-control" value="PRN_NO" placeholder="e.g., PRN_NO, Roll_No, Email" required style="border: 1px solid #764ba2;">
+                            <small class="text-muted">The backend system will use this specific column mapping key to link across rows.</small>
+                        </div>
+
                         <div class="text-center mt-4">
                             <button type="submit" class="btn btn-merge shadow">Merge Student Data</button>
                         </div>
@@ -208,7 +214,7 @@
                             <button id="resetBtn" class="btn btn-secondary fw-bold px-3">🧹 Reset</button>
                         </div>
 
-                        <div id="searchBarContainer" class="mb-3 d-none">
+                        <div class="mb-3" id="searchBarContainer" class="mb-3 d-none">
                             <input type="text" id="tableSearch" class="form-control" placeholder="🔍 Quick Search by PRN, Name or Column Value...">
                         </div>
 
@@ -229,6 +235,7 @@
     </div>
 
     <script>
+        // DOM Element Reference Bindings
         const fileInput = document.getElementById('excelFiles');
         const fileList = document.getElementById('fileList');
         const selectedFilesSection = document.getElementById('selectedFilesSection');
@@ -246,12 +253,15 @@
         const statsSection = document.getElementById('statsSection');
         const countStudents = document.getElementById('countStudents');
         const countColumns = document.getElementById('countColumns');
+        const primaryKeyInput = document.getElementById('primaryKeyInput');
 
+        // File staging controller object initialization
         const dt = new DataTransfer();
         let globalDownloadUrl = '';
         let globalMergedData = [];
         let globalColumns = [];
 
+        // File selection mutation event tracking logic
         fileInput.addEventListener('change', function() {
             Array.from(this.files).forEach(file => {
                 let isDuplicate = false;
@@ -269,6 +279,7 @@
             this.value = '';
         });
 
+        // UI rendering execution method for selected staging list
         function renderFileList() {
             fileList.innerHTML = ''; 
             if (dt.files.length > 0) {
@@ -290,16 +301,18 @@
             }
         }
 
+        // Drop item operation logic from specific file container indices
         window.removeFile = function(index) {
             dt.items.remove(index); 
             renderFileList(); 
         };
 
+        // Standard session navigation redirect handler logic
         document.getElementById('logoutBtn').addEventListener('click', function() {
             window.location.href = 'index.html';
         });
 
-        // Form submit pipeline
+        // Multi-file network transmission submit handler
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault(); 
             
@@ -308,10 +321,11 @@
                 return;
             }
 
+            // Toggling structural layout elements state visibility before request processing
             statusMessage.classList.remove('d-none');
             resultActionSection.classList.add('d-none'); 
             previewTableContainer.classList.add('d-none');
-            searchBarContainer.classList.add('d-none');
+            if(searchBarContainer) searchBarContainer.classList.add('d-none');
             statsSection.classList.add('d-none');
 
             const formData = new FormData();
@@ -319,7 +333,12 @@
                 formData.append('excelFiles', file);
             });
 
+            // Packing the user-defined primary key attribute parameter context
+            const primaryKeyValue = primaryKeyInput.value.trim();
+            formData.append('primaryKey', primaryKeyValue);
+
             try {
+                // Async file transfer query execution block
                 const response = await fetch('/api/merge', {
                     method: 'POST',
                     body: formData
@@ -332,7 +351,7 @@
                     globalDownloadUrl = result.downloadUrl;
                     globalMergedData = result.mergedData || [];
 
-                    // Calculate distinct table column keys safely
+                    // Dynamically map and fetch structural key arrays cleanly
                     globalColumns = [];
                     globalMergedData.forEach(row => {
                         if (row && typeof row === 'object') {
@@ -342,14 +361,15 @@
                         }
                     });
 
-                    // Update Counters on Dashboard
+                    // Update numeric performance counters tracking blocks
                     countStudents.textContent = globalMergedData.length;
                     countColumns.textContent = globalColumns.length;
                     statsSection.classList.remove('d-none');
 
-                    // Unhide the Choice Option Panel
+                    // Unhide post-operation choice panels cleanly
                     resultActionSection.classList.remove('d-none');
                     
+                    // Unstage files cleanly to allow new multi-run process executions
                     dt.items.clear();
                     renderFileList();
                 } else {
@@ -363,14 +383,14 @@
             }
         });
 
-        // VIEW LOGIC with Search Capability
+        // Internal rendering method for structuring compiled grid tabular viewports
         function renderTable(dataToRender) {
             tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
 
             if (globalColumns.length === 0) return;
 
-            // Render Header
+            // Render operational header element arrays
             const headerRow = document.createElement('tr');
             globalColumns.forEach(col => {
                 const th = document.createElement('th');
@@ -379,7 +399,7 @@
             });
             tableHeader.appendChild(headerRow);
 
-            // Render Rows
+            // Sequentially populate transactional table record items
             dataToRender.forEach(row => {
                 const tr = document.createElement('tr');
                 globalColumns.forEach(col => {
@@ -391,21 +411,22 @@
             });
         }
 
+        // View action click process dispatcher trigger logic
         viewDataBtn.addEventListener('click', function() {
             if (!globalMergedData || globalMergedData.length === 0) {
                 alert("No data available to preview!");
                 return;
             }
             
-            tableSearch.value = ''; // Clear older filter values
+            tableSearch.value = ''; // Flush filter query caching parameters
             renderTable(globalMergedData);
 
-            searchBarContainer.classList.remove('d-none');
+            if(searchBarContainer) searchBarContainer.classList.remove('d-none');
             previewTableContainer.classList.remove('d-none');
             previewTableContainer.scrollIntoView({ behavior: 'smooth' });
         });
 
-        // NEW: Live Filtering Mechanism
+        // Client-side row sorting and evaluation text search processing logic
         tableSearch.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase().trim();
             
@@ -423,22 +444,24 @@
             renderTable(filteredData);
         });
 
+        // Direct server transmission handling for static processed master files
         downloadFileBtn.addEventListener('click', function() {
             if (globalDownloadUrl) {
                 window.location.href = globalDownloadUrl;
             }
         });
 
-        // NEW: Reset Dashboard state
+        // Dashboard environment state cleanup operations mapping method
         resetBtn.addEventListener('click', function() {
             globalDownloadUrl = '';
             globalMergedData = [];
             globalColumns = [];
             resultActionSection.classList.add('d-none');
             previewTableContainer.classList.add('d-none');
-            searchBarContainer.classList.add('d-none');
+            if(searchBarContainer) searchBarContainer.classList.add('d-none');
             statsSection.classList.add('d-none');
             tableSearch.value = '';
+            primaryKeyInput.value = 'PRN_NO'; // Restoring structural operational baseline properties
         });
     </script>
 </body>
