@@ -208,10 +208,21 @@
 
                     <div id="resultActionSection" class="action-card text-center d-none">
                         <h5 class="text-success fw-bold mb-3">✓ Files Merged Successfully!</h5>
-                        <div class="d-flex justify-content-center gap-3 mb-4">
+                        <div class="d-flex justify-content-center gap-3 mb-3">
                             <button id="viewDataBtn" class="btn btn-info text-white fw-bold px-4">👁 View Merged Data</button>
                             <button id="downloadFileBtn" class="btn btn-success fw-bold px-4">📥 Download Master File</button>
                             <button id="resetBtn" class="btn btn-secondary fw-bold px-3">🧹 Reset</button>
+                        </div>
+
+                        <!-- Custom column reordering management selector interface panel -->
+                        <div id="customOrderSection" class="my-4 p-3 border border-secondary rounded text-start bg-light" style="display: none;">
+                            <h6 class="fw-bold text-dark mb-1">🛠️ Customize Column Order Sequence:</h6>
+                            <p class="text-muted small mb-3">Click on column tags sequentially to arrange your custom visual layout table structure.</p>
+                            <div id="columnTagsContainer" class="d-flex flex-wrap gap-2 mb-3"></div>
+                            <div class="text-secondary small">
+                                <strong>Active Working Sequence:</strong> 
+                                <span id="activeSequenceDisplay" class="text-primary fw-bold">Default (Unsorted)</span>
+                            </div>
                         </div>
 
                         <div class="mb-3" id="searchBarContainer" class="mb-3 d-none">
@@ -255,11 +266,17 @@
         const countColumns = document.getElementById('countColumns');
         const primaryKeyInput = document.getElementById('primaryKeyInput');
 
+        // Layout targets bound to coordinate custom ordering adjustments
+        const customOrderSection = document.getElementById('customOrderSection');
+        const columnTagsContainer = document.getElementById('columnTagsContainer');
+        const activeSequenceDisplay = document.getElementById('activeSequenceDisplay');
+
         // File staging controller object initialization
         const dt = new DataTransfer();
         let globalDownloadUrl = '';
         let globalMergedData = [];
         let globalColumns = [];
+        let globalCustomOrderSequence = []; // Array tracking selected ordered indices matching the requested flow
 
         // File selection mutation event tracking logic
         fileInput.addEventListener('change', function() {
@@ -312,6 +329,49 @@
             window.location.href = 'index.html';
         });
 
+        // Setup dynamic clickable tags matching the gathered dataset schema headers
+        function initCustomOrderPanel() {
+            columnTagsContainer.innerHTML = '';
+            globalCustomOrderSequence = [];
+            activeSequenceDisplay.textContent = 'Default (Unsorted)';
+            customOrderSection.style.display = 'block';
+
+            globalColumns.forEach(columnName => {
+                const tagButton = document.createElement('button');
+                tagButton.type = 'button';
+                tagButton.className = 'btn btn-sm btn-outline-purple m-1 border-purple text-purple';
+                tagButton.style.borderColor = '#764ba2';
+                tagButton.style.color = '#764ba2';
+                tagButton.textContent = columnName;
+
+                // Alternate toggle sequence context based upon user registration interaction clicks
+                tagButton.addEventListener('click', function() {
+                    if (!globalCustomOrderSequence.includes(columnName)) {
+                        globalCustomOrderSequence.push(columnName);
+                        tagButton.className = 'btn btn-sm btn-purple text-white';
+                        tagButton.style.backgroundColor = '#764ba2';
+                    } else {
+                        globalCustomOrderSequence = globalCustomOrderSequence.filter(col => col !== columnName);
+                        tagButton.className = 'btn btn-sm btn-outline-purple text-purple';
+                        tagButton.style.backgroundColor = 'transparent';
+                    }
+
+                    // Synchronize the display and re-render visual tables mapped to working configurations
+                    if (globalCustomOrderSequence.length > 0) {
+                        activeSequenceDisplay.textContent = globalCustomOrderSequence.join(' ➔ ');
+                    } else {
+                        activeSequenceDisplay.textContent = 'Default (Unsorted)';
+                    }
+
+                    // Re-trigger live tabular rendering dynamically matching current target bounds
+                    const activeSearchQuery = tableSearch.value.toLowerCase().trim();
+                    filterAndRenderTable(activeSearchQuery);
+                });
+
+                columnTagsContainer.appendChild(tagButton);
+            });
+        }
+
         // Multi-file network transmission submit handler
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault(); 
@@ -325,6 +385,7 @@
             statusMessage.classList.remove('d-none');
             resultActionSection.classList.add('d-none'); 
             previewTableContainer.classList.add('d-none');
+            customOrderSection.style.display = 'none';
             if(searchBarContainer) searchBarContainer.classList.add('d-none');
             statsSection.classList.add('d-none');
 
@@ -368,6 +429,7 @@
 
                     // Unhide post-operation choice panels cleanly
                     resultActionSection.classList.remove('d-none');
+                    initCustomOrderPanel(); // Build interactive customization panel
                     
                     // Unstage files cleanly to allow new multi-run process executions
                     dt.items.clear();
@@ -388,11 +450,14 @@
             tableHeader.innerHTML = '';
             tableBody.innerHTML = '';
 
-            if (globalColumns.length === 0) return;
+            // Map working layout array priority configurations cleanly
+            const activeWorkingHeaders = globalCustomOrderSequence.length > 0 ? globalCustomOrderSequence : globalColumns;
+
+            if (activeWorkingHeaders.length === 0) return;
 
             // Render operational header element arrays
             const headerRow = document.createElement('tr');
-            globalColumns.forEach(col => {
+            activeWorkingHeaders.forEach(col => {
                 const th = document.createElement('th');
                 th.textContent = col;
                 headerRow.appendChild(th);
@@ -402,13 +467,29 @@
             // Sequentially populate transactional table record items
             dataToRender.forEach(row => {
                 const tr = document.createElement('tr');
-                globalColumns.forEach(col => {
+                activeWorkingHeaders.forEach(col => {
                     const td = document.createElement('td');
                     td.textContent = (row[col] !== undefined && row[col] !== null) ? row[col] : '-'; 
                     tr.appendChild(td);
                 });
                 tableBody.appendChild(tr);
             });
+        }
+
+        // Shared routing layer to reconcile inputs against search matches safely
+        function filterAndRenderTable(searchTerm) {
+            if (!searchTerm) {
+                renderTable(globalMergedData);
+                return;
+            }
+
+            const filteredData = globalMergedData.filter(row => {
+                return Object.values(row).some(val => 
+                    val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm)
+                );
+            });
+
+            renderTable(filteredData);
         }
 
         // View action click process dispatcher trigger logic
@@ -429,19 +510,7 @@
         // Client-side row sorting and evaluation text search processing logic
         tableSearch.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase().trim();
-            
-            if (searchTerm === "") {
-                renderTable(globalMergedData);
-                return;
-            }
-
-            const filteredData = globalMergedData.filter(row => {
-                return Object.values(row).some(val => 
-                    val !== null && val !== undefined && val.toString().toLowerCase().includes(searchTerm)
-                );
-            });
-
-            renderTable(filteredData);
+            filterAndRenderTable(searchTerm);
         });
 
         // Direct server transmission handling for static processed master files
@@ -456,8 +525,10 @@
             globalDownloadUrl = '';
             globalMergedData = [];
             globalColumns = [];
+            globalCustomOrderSequence = [];
             resultActionSection.classList.add('d-none');
             previewTableContainer.classList.add('d-none');
+            customOrderSection.style.display = 'none';
             if(searchBarContainer) searchBarContainer.classList.add('d-none');
             statsSection.classList.add('d-none');
             tableSearch.value = '';
