@@ -83,13 +83,34 @@ app.post('/api/merge', upload.array('excelFiles'), (req, res) => {
         });
 
         // Convert our intelligently grouped student map back into a clean flat array list
-        const masterData = Object.values(studentMap);
+        const rawMasterData = Object.values(studentMap);
+
+        // --- GLOBAL BASELINE COLUMN SORTING LOGIC ---
+        // 1. Extract all unique column headers across all merged rows using a Set
+        let allHeaders = new Set();
+        rawMasterData.forEach(row => {
+            Object.keys(row).forEach(key => allHeaders.add(key));
+        });
+
+        // 2. Convert the Set to an Array and sort it alphabetically (A to Z) as a safe baseline sequence
+        let sortedHeaders = Array.from(allHeaders).sort();
+
+        // 3. Reconstruct each row object with sorted keys so the frontend preview receives a structured data block
+        const masterData = rawMasterData.map(row => {
+            let sortedRow = {};
+            sortedHeaders.forEach(key => {
+                if (row[key] !== undefined) {
+                    sortedRow[key] = row[key];
+                }
+            });
+            return sortedRow;
+        });
 
         // Create a completely new Blank Workbook Object for our final master deliverable
         const newWorkbook = XLSX.utils.book_new();
         
-        // Convert our compiled JavaScript Master Array data back into binary Worksheet structures
-        const newWorksheet = XLSX.utils.json_to_sheet(masterData);
+        // 4. Convert master array data into binary Worksheet structures matching our baseline sorted schema headers
+        const newWorksheet = XLSX.utils.json_to_sheet(masterData, { header: sortedHeaders });
         
         // Append the sheet data into our new workbook container given a tab title name
         XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Master Student Report');
@@ -102,7 +123,7 @@ app.post('/api/merge', upload.array('excelFiles'), (req, res) => {
         // Commit file system write execution commands out onto the local memory drive directory
         XLSX.writeFile(newWorkbook, outputPath);
 
-        // Sending back the direct download link AND the raw merged data array for frontend table preview feature
+        // Sending back the direct download link AND the raw merged data array for frontend customized interactive reordering
         res.json({
             success: true,
             message: 'Files merged successfully!',
